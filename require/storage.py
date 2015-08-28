@@ -120,12 +120,14 @@ class OptimizedFilesMixin(object):
                         module_build_js_path = env.compile_dir_path(standalone_config["build_profile"])
                     else:
                         module_build_js_path = env.resource_path("module.build.js")
+                    kvBaseDir = os.path.join(env.compile_dir, require_settings.REQUIRE_BASE_URL)
+                    standalone_base_dir = standalone_config.get('baseDir', None)
                     env.run_optimizer(
                         module_build_js_path,
                         name = "almond",
                         include = standalone_module,
                         out = env.build_dir_path(standalone_config["out"]),
-                        baseUrl = os.path.join(env.compile_dir, require_settings.REQUIRE_BASE_URL),
+                        baseUrl = os.path.join(kvBaseDir, standalone_base_dir) if standalone_base_dir else kvBaseDir
                     )
                 else:
                     raise ImproperlyConfigured("No 'out' option specified for module '{module}' in REQUIRE_STANDALONE_MODULES setting.".format(
