@@ -48,6 +48,9 @@ class TemporaryCompileEnvironment(object):
             in kwargs.items()
         )
         # Run the compiler in a subprocess.
+        print('node parameters')
+        print(compiler_args)
+        print()
         if subprocess.call(compiler_args) != 0:
             raise OptimizationError("Error while running r.js optimizer.")
 
@@ -95,48 +98,21 @@ class OptimizedFilesMixin(object):
                             dst_handle.write(block)
                 # Store details of file.
                 compile_info[name] = hash.digest()
-            # Run the optimizer.
-            if require_settings.REQUIRE_BUILD_PROFILE is not False:
-                if require_settings.REQUIRE_BUILD_PROFILE is not None:
-                    app_build_js_path = env.compile_dir_path(require_settings.REQUIRE_BUILD_PROFILE)
-                else:
-                    app_build_js_path = env.resource_path("app.build.js")
-                env.run_optimizer(
-                    app_build_js_path,
-                    dir = env.build_dir,
-                    appDir = env.compile_dir,
-                    baseUrl = require_settings.REQUIRE_BASE_URL,
-                )
-            # Compile standalone modules.
-            if require_settings.REQUIRE_STANDALONE_MODULES:
-                shutil.copyfile(
-                    env.resource_path("almond.js"),
-                    env.compile_dir_path("almond.js"),
-                )
-                exclude_names.append(resolve_require_url("almond.js"))
+
             for standalone_module, standalone_config in require_settings.REQUIRE_STANDALONE_MODULES.items():
-                if "out" in standalone_config:
-                    if "build_profile" in standalone_config:
-                        module_build_js_path = env.compile_dir_path(standalone_config["build_profile"])
-                    else:
-                        module_build_js_path = env.resource_path("module.build.js")
-                    kvBaseDir = os.path.join(env.compile_dir, require_settings.REQUIRE_BASE_URL)
-                    standalone_base_dir = standalone_config.get('baseDir', None)
-                    env.run_optimizer(
-                        module_build_js_path,
-                        name = "almond",
-                        include = standalone_module,
-                        out = env.build_dir_path(standalone_config["out"]),
-                        baseUrl = os.path.join(kvBaseDir, standalone_base_dir) if standalone_base_dir else kvBaseDir
-                    )
+                if "build_profile" in standalone_config:
+                    module_build_js_path = env.compile_dir_path(standalone_config["build_profile"])
                 else:
-                    raise ImproperlyConfigured("No 'out' option specified for module '{module}' in REQUIRE_STANDALONE_MODULES setting.".format(
-                        module = standalone_module
-                    ))
+                    module_build_js_path = env.resource_path("module.build.js")
+                kvBaseDir = os.path.join(env.compile_dir, require_settings.REQUIRE_BASE_URL)
+                standalone_base_dir = standalone_config.get('baseDir', '')
+
+                env.run_optimizer(module_build_js_path)
+                    
             # Update assets with modified ones.
             compiled_storage = FileSystemStorage(env.build_dir)
             # Walk the compiled directory, checking for modified assets.
-            for build_dirpath, _, build_filenames in os.walk(env.build_dir):
+            for build_dirpath, _, build_filenames in os.walk(env.compile_dir):
                 for build_filename in build_filenames:
                     # Determine asset name.
                     build_filepath = os.path.join(build_dirpath, build_filename)
