@@ -110,7 +110,7 @@ class OptimizedFilesMixin(object):
                 env.run_optimizer(module_build_js_path)
                     
             # Update assets with modified ones.
-            compiled_storage = FileSystemStorage(env.build_dir)
+            compiled_storage = FileSystemStorage(env.compile_dir)
             # Walk the compiled directory, checking for modified assets.
             for build_dirpath, _, build_filenames in os.walk(env.compile_dir):
                 for build_filename in build_filenames:
